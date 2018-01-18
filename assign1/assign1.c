@@ -40,6 +40,19 @@
  *
  *********************************************************************/
 
+/*
+ * Helper function to swap bytes at position hi and lo
+ * TODO: generalize function to work with different sizes e.g. bytes, nibbles, etc.
+ */
+unsigned long swap_bytes (unsigned long x, int hi, int lo)
+{
+//    return ( (x & (0xff << (hi * 8) )) << ((hi - lo) * 8) ) | (x & (0xff << (lo * 8) ) << ((hi - lo) * 8) );
+//    return (x & 0x0000ff0000000000);
+    // TODO: why doesn't shifting 40 bits
+    return (x & (0xff << 24));
+//    return ( (x & (0xff << (lo * 8)))  );
+}
+
 /*********************************************************************
  *
  * byte_sort()
@@ -55,7 +68,60 @@
 
 unsigned long byte_sort (unsigned long arg)
 {
-  return 0;
+    unsigned long sort = arg;
+    int len = 8;
+    for (int i = 0; i < len; ++i) {
+        // Byte at index i.
+        unsigned long b1 = (sort >> (8*i)) & 0xff;
+        for (int j = 0; j < len; ++j) {
+            // Byte at index j.
+            unsigned long b2 = (sort >> (8*j)) & 0xff;
+            if (b1 > b2 && j > i)
+                printf("%lu is greater than %lu\n", b1, b2);
+            else if(b1 < b2 && i > j)
+                printf("%lu is less than %lu\n", b1, b2);
+        }
+//        printf("%lu\n", b1);
+    }
+
+    return sort;
+}
+
+int main()
+{
+    unsigned long x = 0xff;
+    unsigned long test = 0x0000aa0000001100;
+    for (int i = 0; i < 8; ++i) {
+        unsigned long b1 = (x >> (8*i)) & 0xff;
+        printf("%lu\n", b1);
+    }
+    printf("---------------\n");
+    unsigned long x1 = x << (8 * 5);
+    for (int i = 0; i < 8; ++i) {
+        unsigned long b1 = (x1 >> (8*i)) & 0xff;
+        printf("%lu\n", b1);
+    }
+    printf("----------------\n");
+    unsigned long res = (test & x1) >> 32;
+    for (int i = 0; i < 8; ++i) {
+        unsigned long b1 = (res >> (8*i)) & 0xff;
+        printf("%lu\n", b1);
+    }
+
+//    unsigned long org = 0x0000aa0000001100;
+//    unsigned long swp = swap_bytes(org, 5, 1);
+//    for (int i = 0; i < 8; ++i) {
+//        unsigned long b1 = (org >> (8*i)) & 0xff;
+//        printf("%lu\n", b1);
+//    }
+//    printf("-------------------\n");
+//    for (int i = 0; i < 8; ++i) {
+//        unsigned long b1 = (swp >> (8*i)) & 0xff;
+//        printf("%lu\n", b1);
+//    }
+
+//    byte_sort(0x0000000000000201);
+    return 0;
 }
 
 /*********************************************************************
@@ -170,3 +236,26 @@ void convert (enum format_t mode, unsigned long value)
 void draw_me (void)
 {
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -40,18 +40,6 @@
  *
  *********************************************************************/
 
-/*
- * Helper function to swap bytes at position hi and lo
- * TODO: generalize function to work with different sizes e.g. bytes, nibbles, etc.
- */
-unsigned long swap_bytes (unsigned long x, int hi, int lo)
-{
-//    return ( (x & (0xff << (hi * 8) )) << ((hi - lo) * 8) ) | (x & (0xff << (lo * 8) ) << ((hi - lo) * 8) );
-//    return (x & 0x0000ff0000000000);
-    // TODO: why doesn't shifting 40 bits
-    return (x & (0xff << 24));
-//    return ( (x & (0xff << (lo * 8)))  );
-}
 
 /*********************************************************************
  *
@@ -87,38 +75,36 @@ unsigned long byte_sort (unsigned long arg)
     return sort;
 }
 
+/*
+ * Helper function to swap bytes at position hi and lo
+ * TODO: generalize function to work with different sizes e.g. bytes, nibbles, etc.
+ */
+unsigned long swap_bytes (unsigned long x, int hi, int lo)
+{
+//    unsigned long mask = 0xff;
+    unsigned long ones = 0xffffffffffffffff;
+    unsigned long mask = 0x00;
+//    unsigned long swp = ( (x & (mask << (lo * 8))) << (8 * (hi - lo)) ) | (x & (mask << (hi * 8))) >> (8 * (hi - lo));
+//    return ones
+
+}
+
 int main()
 {
-    unsigned long x = 0xff;
-    unsigned long test = 0x0000aa0000001100;
+//    unsigned long test = 0x0000aa0000001100;
+//    unsigned long test = 0x11cc0000000000aa;
+    unsigned long test = 0x1111111111111111;
     for (int i = 0; i < 8; ++i) {
-        unsigned long b1 = (x >> (8*i)) & 0xff;
+        unsigned long b1 = (test >> (8*i)) & 0xff;
         printf("%lu\n", b1);
     }
     printf("---------------\n");
-    unsigned long x1 = x << (8 * 5);
-    for (int i = 0; i < 8; ++i) {
-        unsigned long b1 = (x1 >> (8*i)) & 0xff;
-        printf("%lu\n", b1);
-    }
-    printf("----------------\n");
-    unsigned long res = (test & x1) >> 32;
+    unsigned long res = swap_bytes(test, 6, 0);
     for (int i = 0; i < 8; ++i) {
         unsigned long b1 = (res >> (8*i)) & 0xff;
         printf("%lu\n", b1);
     }
 
-//    unsigned long org = 0x0000aa0000001100;
-//    unsigned long swp = swap_bytes(org, 5, 1);
-//    for (int i = 0; i < 8; ++i) {
-//        unsigned long b1 = (org >> (8*i)) & 0xff;
-//        printf("%lu\n", b1);
-//    }
-//    printf("-------------------\n");
-//    for (int i = 0; i < 8; ++i) {
-//        unsigned long b1 = (swp >> (8*i)) & 0xff;
-//        printf("%lu\n", b1);
-//    }
 
 //    byte_sort(0x0000000000000201);
     return 0;

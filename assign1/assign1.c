@@ -1,8 +1,9 @@
 #define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/syscall.h> 
+#include <sys/syscall.h>
 #include <unistd.h>
 
 /*********************************************************************
@@ -39,6 +40,7 @@
  *
  *
  *********************************************************************/
+static unsigned long swap_bytes(unsigned long x, int size, int hi, int lo);
 
 
 /*********************************************************************
@@ -53,61 +55,20 @@
  * EXAMPLE: byte_sort (0x0403deadbeef0201) returns 0xefdebead04030201
  *
  *********************************************************************/
-
-unsigned long byte_sort (unsigned long arg)
-{
+unsigned long byte_sort(unsigned long arg) {
     unsigned long sort = arg;
     int len = 8;
     for (int i = 0; i < len; ++i) {
-        // Byte at index i.
-        unsigned long b1 = (sort >> (8*i)) & 0xff;
-        for (int j = 0; j < len; ++j) {
-            // Byte at index j.
-            unsigned long b2 = (sort >> (8*j)) & 0xff;
-            if (b1 > b2 && j > i)
-                printf("%lu is greater than %lu\n", b1, b2);
-            else if(b1 < b2 && i > j)
-                printf("%lu is less than %lu\n", b1, b2);
+        unsigned long b1 = (sort >> (len * i)) & 0xff;
+        for (int j = i + 1; j < len; ++j) {
+            unsigned long b2 = (sort >> (len * j)) & 0xff;
+            if (b1 > b2 && j > i) {
+                sort = swap_bytes(sort, len, j, i);
+                b1 = (sort >> (len * i)) & 0xff;
+            }
         }
-//        printf("%lu\n", b1);
     }
-
     return sort;
-}
-
-/*
- * Helper function to swap bytes at position hi and lo
- * TODO: generalize function to work with different sizes e.g. bytes, nibbles, etc.
- */
-unsigned long swap_bytes (unsigned long x, int hi, int lo)
-{
-//    unsigned long mask = 0xff;
-    unsigned long ones = 0xffffffffffffffff;
-    unsigned long mask = 0x00;
-//    unsigned long swp = ( (x & (mask << (lo * 8))) << (8 * (hi - lo)) ) | (x & (mask << (hi * 8))) >> (8 * (hi - lo));
-//    return ones
-
-}
-
-int main()
-{
-//    unsigned long test = 0x0000aa0000001100;
-//    unsigned long test = 0x11cc0000000000aa;
-    unsigned long test = 0x1111111111111111;
-    for (int i = 0; i < 8; ++i) {
-        unsigned long b1 = (test >> (8*i)) & 0xff;
-        printf("%lu\n", b1);
-    }
-    printf("---------------\n");
-    unsigned long res = swap_bytes(test, 6, 0);
-    for (int i = 0; i < 8; ++i) {
-        unsigned long b1 = (res >> (8*i)) & 0xff;
-        printf("%lu\n", b1);
-    }
-
-
-//    byte_sort(0x0000000000000201);
-    return 0;
 }
 
 /*********************************************************************
@@ -125,11 +86,80 @@ int main()
  * EXAMPLE: nibble_sort (0x0403deadbeef0201) returns 0xfeeeddba43210000
  *
  *********************************************************************/
-
-unsigned long nibble_sort (unsigned long arg)
-{
-  return 0;
+unsigned long nibble_sort(unsigned long arg) {
+    unsigned long sort = arg;
+    int len = 4;
+    for (int i = 0; i < 16; ++i) {
+        unsigned long b1 = (sort >> (len * i)) & 0xf;
+        for (int j = i + 1; j < 16; ++j) {
+            unsigned long b2 = (sort >> (len * j)) & 0xf;
+            if (b1 > b2 && j > i) {
+                sort = swap_bytes(sort, len, j, i);
+                b1 = (sort >> (len * i)) & 0xf;
+            }
+        }
+    }
+    return sort;
 }
+
+void test_byte_sort()
+{
+    // * EXAMPLE: byte_sort (0x0403deadbeef0201) returns 0xefdebead04030201
+    unsigned long x = 0x0403deadbeef0201;
+
+    for (int i = 0; i < 8; ++i) {
+        unsigned long b1 = (x >> (8 * i)) & 0xff;
+        printf("%lu\n", b1);
+    }
+    printf("------------------------------\n");
+    unsigned long res = byte_sort(x);
+    for (int i = 0; i < 8; ++i) {
+        unsigned long b1 = (res >> (8 * i)) & 0xff;
+        printf("%lu\n", b1);
+    }
+    printf("------------------------------\n");
+//    printf("%lu\n%lu\n", res, 0xefdebead04030201);
+
+}
+
+void test_nib_sort()
+{
+//    * EXAMPLE: nibble_sort (0x0403deadbeef0201) returns 0xfeeeddba43210000
+
+    unsigned long x = 0x0403deadbeef0201;
+    for (int i = 0; i < 16; ++i) {
+        unsigned char b1 = (x >> (4 * i)) & 0xf;
+        printf("%u\n", b1);
+    }
+    printf("------------------------------\n");
+    unsigned long res = nibble_sort(x);
+//    unsigned long res = swap_bytes(x, 4, 1, 0);
+    for (int i = 0; i < 16; ++i) {
+        unsigned char b1 = (res >> (4 * i)) & 0xf;
+        printf("%u\n", b1);
+    }
+    printf("------------------------------\n");
+    printf("%lu\n%lu\n", 0xfeeeddba43210000, res);
+}
+
+/*
+ * Helper function to swap bytes at position hi and lo
+ * TODO: generalize function to work with different sizes e.g. bytes, nibbles, etc.
+ */
+static unsigned long swap_bytes(unsigned long x, int size, int hi, int lo) {
+    unsigned long mask = (size == 8) ? 0xff : 0xf;
+    unsigned long lside = x & ~(mask << (hi * size));
+    unsigned long swp = ((x & (mask << (lo * size))) << (size * (hi - lo))) | (x & (mask << (hi * size))) >> (size * (hi - lo));
+    unsigned long zeroed = lside & ~(mask << (lo * size));
+    return zeroed | swp;
+}
+
+int main() {
+
+
+    return 0;
+}
+
 
 /*********************************************************************
  *
@@ -154,13 +184,12 @@ unsigned long nibble_sort (unsigned long arg)
  *********************************************************************/
 
 struct elt {
-  char val;
-  struct elt *link;
+    char val;
+    struct elt *link;
 };
 
-struct elt *name_list (void)
-{
-  return NULL;
+struct elt *name_list(void) {
+    return NULL;
 }
 
 /*********************************************************************
@@ -185,11 +214,10 @@ struct elt *name_list (void)
  *********************************************************************/
 
 enum format_t {
-  OCT = 66, BIN, HEX
+    OCT = 66, BIN, HEX
 };
 
-void convert (enum format_t mode, unsigned long value)
-{
+void convert(enum format_t mode, unsigned long value) {
 }
 
 /*********************************************************************
@@ -219,8 +247,7 @@ void convert (enum format_t mode, unsigned long value)
  *
  *********************************************************************/
 
-void draw_me (void)
-{
+void draw_me(void) {
 }
 
 

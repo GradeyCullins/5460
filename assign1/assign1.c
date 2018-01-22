@@ -154,11 +154,6 @@ static unsigned long swap_bytes(unsigned long x, int size, int hi, int lo) {
     return zeroed | swp;
 }
 
-int main() {
-
-
-    return 0;
-}
 
 
 /*********************************************************************
@@ -189,9 +184,31 @@ struct elt {
 };
 
 struct elt *name_list(void) {
+    char *name = "Gradey";
+
+    struct elt *head = (struct elt *)malloc(sizeof(struct elt));
+    head->val = 'G';
+//    struct elt *head = (struct elt *)malloc(-1);
+
+    if (head == NULL) {
+        printf("here");
+        free(head);
+        return NULL;
+    }
+
+    for (int i = 0; i < 6; ++i) {
+
+    }
+
     return NULL;
 }
 
+int main() {
+
+    name_list();
+
+    return 0;
+}
 /*********************************************************************
  *
  * convert()

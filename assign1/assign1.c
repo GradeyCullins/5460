@@ -102,8 +102,7 @@ unsigned long nibble_sort(unsigned long arg) {
     return sort;
 }
 
-void test_byte_sort()
-{
+void test_byte_sort() {
     // * EXAMPLE: byte_sort (0x0403deadbeef0201) returns 0xefdebead04030201
     unsigned long x = 0x0403deadbeef0201;
 
@@ -122,8 +121,7 @@ void test_byte_sort()
 
 }
 
-void test_nib_sort()
-{
+void test_nib_sort() {
 //    * EXAMPLE: nibble_sort (0x0403deadbeef0201) returns 0xfeeeddba43210000
 
     unsigned long x = 0x0403deadbeef0201;
@@ -149,11 +147,11 @@ void test_nib_sort()
 static unsigned long swap_bytes(unsigned long x, int size, int hi, int lo) {
     unsigned long mask = (size == 8) ? 0xff : 0xf;
     unsigned long lside = x & ~(mask << (hi * size));
-    unsigned long swp = ((x & (mask << (lo * size))) << (size * (hi - lo))) | (x & (mask << (hi * size))) >> (size * (hi - lo));
+    unsigned long swp =
+            ((x & (mask << (lo * size))) << (size * (hi - lo))) | (x & (mask << (hi * size))) >> (size * (hi - lo));
     unsigned long zeroed = lside & ~(mask << (lo * size));
     return zeroed | swp;
 }
-
 
 
 /*********************************************************************
@@ -186,29 +184,60 @@ struct elt {
 struct elt *name_list(void) {
     char *name = "Gradey";
 
-    struct elt *head = (struct elt *)malloc(sizeof(struct elt));
-    head->val = 'G';
-//    struct elt *head = (struct elt *)malloc(-1);
+    struct elt *head = (struct elt *) malloc(sizeof(struct elt));
 
-    if (head == NULL) {
-        printf("here");
+    if (!head) {
+        printf("Malloc for head failed. Exiting. . .");
         free(head);
         return NULL;
     }
 
-    for (int i = 0; i < 6; ++i) {
+    struct elt *curr = (struct elt *) malloc(sizeof(struct elt));
 
+    if (!curr) {
+        free(curr);
+        free(head);
+        return NULL;
     }
 
-    return NULL;
+    head->val = 'G';
+    head->link = curr;
+
+    for (int i = 1; i < 6; ++i) {
+        curr->val = name[i];
+        curr->link = (struct elt *) malloc(sizeof(struct elt));
+
+        if (!curr->link) {
+            struct elt *prev = head;
+            curr = prev->link;
+            while (prev->link != NULL) {
+                free(prev);
+                prev = curr;
+                curr = curr->link;
+            }
+            return NULL;
+        }
+
+        curr = curr->link;
+    }
+
+    curr->link = NULL;
+
+    return head;
 }
 
 int main() {
 
-    name_list();
+    struct elt *p = malloc(sizeof(struct elt));
+    struct elt *head = name_list();
+    while (head->link != NULL) {
+        printf("%c", head->val);
+        head = head->link;
+    }
 
     return 0;
 }
+
 /*********************************************************************
  *
  * convert()

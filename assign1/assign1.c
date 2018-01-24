@@ -226,17 +226,16 @@ struct elt *name_list(void) {
     return head;
 }
 
-int main() {
-
+static void test_elt()
+{
     struct elt *p = malloc(sizeof(struct elt));
     struct elt *head = name_list();
     while (head->link != NULL) {
         printf("%c", head->val);
         head = head->link;
     }
-
-    return 0;
 }
+
 
 /*********************************************************************
  *
@@ -264,6 +263,46 @@ enum format_t {
 };
 
 void convert(enum format_t mode, unsigned long value) {
+    unsigned int mask;
+    switch (mode) {
+        case OCT:
+            mask = 0x7;
+            break;
+        case BIN:
+            mask = 0x1;
+            for (int i = 63; i > -1; --i) {
+                unsigned char bit = (unsigned char) ((value >> i) & mask);
+                if (bit) {
+                    putc('1', stdout);
+                } else {
+                    putc('0', stdout);
+                }
+            }
+            break;
+        case HEX:
+            mask = 0xf;
+            putc('0', stdout);
+            putc('x', stdout);
+            for (int j = 15; j > -1; --j) {
+                unsigned char dig = (unsigned char) ((value >> (j * 4)) & mask);
+                if (dig <= 9) {
+                    putc(dig + '0', stdout);
+                } else {
+                    putc('a' - 10 + dig, stdout);
+
+                }
+            }
+            break;
+        default:
+            return;
+    }
+}
+
+int main() {
+
+    printf("%o\n", 6);
+
+    return 0;
 }
 
 /*********************************************************************

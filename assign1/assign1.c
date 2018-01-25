@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 
 /*********************************************************************
  *
@@ -226,8 +228,7 @@ struct elt *name_list(void) {
     return head;
 }
 
-static void test_elt()
-{
+static void test_elt() {
     struct elt *p = malloc(sizeof(struct elt));
     struct elt *head = name_list();
     while (head->link != NULL) {
@@ -267,6 +268,10 @@ void convert(enum format_t mode, unsigned long value) {
     switch (mode) {
         case OCT:
             mask = 0x7;
+            for (int k = 21; k > -1; --k) {
+                unsigned char octet = (unsigned char) ((value >> (k * 3)) & mask);
+                printf("%u", octet);
+            }
             break;
         case BIN:
             mask = 0x1;
@@ -281,6 +286,7 @@ void convert(enum format_t mode, unsigned long value) {
             break;
         case HEX:
             mask = 0xf;
+        http://ib3.bislr.net/unsubscribe/v2?s=vasafitness&m=tr_c4d333a1-9ee1-4b6c-ac99-a589d4725402
             putc('0', stdout);
             putc('x', stdout);
             for (int j = 15; j > -1; --j) {
@@ -296,13 +302,6 @@ void convert(enum format_t mode, unsigned long value) {
         default:
             return;
     }
-}
-
-int main() {
-
-    printf("%o\n", 6);
-
-    return 0;
 }
 
 /*********************************************************************
@@ -333,9 +332,39 @@ int main() {
  *********************************************************************/
 
 void draw_me(void) {
+    FILE *f = fopen("file.txt", "w");
+    write(f->_fileno, "hello world\n", 12);
+
+//    char *buf = "hello world\n";
+//
+//    long fd = syscall(SYS_open, "file.txt", O_CREAT);
+//
+//    if (fd == -1) {
+//        printf("Open failed with errno = %d\n", errno);
+//        // TODO: cleanup
+//        // close fd?
+//    }
+//
+//
+//    long chm = syscall(SYS_chmod, "file.txt", 0777);
+//
+//    if (chm == -1) {
+//        printf("Chmod failed with errno = %d\n", errno);
+//    }
+//
+//    long wr = syscall(SYS_write, fd, buf, 12);
+//
+//    if (wr == -1) {
+//        printf("Write failed with errno = %d\n", errno);
+//    }
+
+
 }
 
-
+int main() {
+    draw_me();
+    return 0;
+}
 
 
 

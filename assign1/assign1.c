@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -26,7 +25,7 @@
  * - your code must compile successfully on CADE lab Linux
  *   machines when using:
  *
- * /usr/bin/gcc -O2 -fmessage-length=0 -pedantic-errors -std=c99 -Werror -Wall -Wextra -Wwrite-strings -Winit-self -Wcast-align -Wcast-qual -Wpointer-arith -Wstrict-aliasing -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter -Wshadow -Wuninitialized -Wold-style-definition -c assign1.c 
+/usr/bin/gcc -O2 -fmessage-length=0 -pedantic-errors -std=c99 -Werror -Wall -Wextra -Wwrite-strings -Winit-self -Wcast-align -Wcast-qual -Wpointer-arith -Wstrict-aliasing -Wformat=2 -Wmissing-include-dirs -Wno-unused-parameter -Wshadow -Wuninitialized -Wold-style-definition -c assign1.c 
  *
  * NOTE 1: Some of the specifications below are specific to 64-bit
  * machines, such as those found in the CADE lab.  If you choose to
@@ -104,48 +103,6 @@ unsigned long nibble_sort(unsigned long arg) {
     return sort;
 }
 
-void test_byte_sort() {
-    // * EXAMPLE: byte_sort (0x0403deadbeef0201) returns 0xefdebead04030201
-    unsigned long x = 0x0403deadbeef0201;
-
-    for (int i = 0; i < 8; ++i) {
-        unsigned long b1 = (x >> (8 * i)) & 0xff;
-        printf("%lu\n", b1);
-    }
-    printf("------------------------------\n");
-    unsigned long res = byte_sort(x);
-    for (int i = 0; i < 8; ++i) {
-        unsigned long b1 = (res >> (8 * i)) & 0xff;
-        printf("%lu\n", b1);
-    }
-    printf("------------------------------\n");
-//    printf("%lu\n%lu\n", res, 0xefdebead04030201);
-
-}
-
-void test_nib_sort() {
-//    * EXAMPLE: nibble_sort (0x0403deadbeef0201) returns 0xfeeeddba43210000
-
-    unsigned long x = 0x0403deadbeef0201;
-    for (int i = 0; i < 16; ++i) {
-        unsigned char b1 = (x >> (4 * i)) & 0xf;
-        printf("%u\n", b1);
-    }
-    printf("------------------------------\n");
-    unsigned long res = nibble_sort(x);
-//    unsigned long res = swap_bytes(x, 4, 1, 0);
-    for (int i = 0; i < 16; ++i) {
-        unsigned char b1 = (res >> (4 * i)) & 0xf;
-        printf("%u\n", b1);
-    }
-    printf("------------------------------\n");
-    printf("%lu\n%lu\n", 0xfeeeddba43210000, res);
-}
-
-/*
- * Helper function to swap bytes at position hi and lo
- * TODO: generalize function to work with different sizes e.g. bytes, nibbles, etc.
- */
 static unsigned long swap_bytes(unsigned long x, int size, int hi, int lo) {
     unsigned long mask = (size == 8) ? 0xff : 0xf;
     unsigned long lside = x & ~(mask << (hi * size));
@@ -184,12 +141,11 @@ struct elt {
 };
 
 struct elt *name_list(void) {
-    char *name = "Gradey";
+    const char *name = "Gradey";
 
     struct elt *head = (struct elt *) malloc(sizeof(struct elt));
 
     if (!head) {
-        printf("Malloc for head failed. Exiting. . .");
         free(head);
         return NULL;
     }
@@ -212,11 +168,8 @@ struct elt *name_list(void) {
         if (!curr->link) {
             struct elt *prev = head;
             curr = prev->link;
-            while (prev->link != NULL) {
-                free(prev);
                 prev = curr;
                 curr = curr->link;
-            }
             return NULL;
         }
 
@@ -227,16 +180,6 @@ struct elt *name_list(void) {
 
     return head;
 }
-
-static void test_elt() {
-    struct elt *p = malloc(sizeof(struct elt));
-    struct elt *head = name_list();
-    while (head->link != NULL) {
-        printf("%c", head->val);
-        head = head->link;
-    }
-}
-
 
 /*********************************************************************
  *
@@ -270,7 +213,6 @@ void convert(enum format_t mode, unsigned long value) {
             mask = 0x7;
             for (int k = 21; k > -1; --k) {
                 unsigned char octet = (unsigned char) ((value >> (k * 3)) & mask);
-                printf("%u", octet);
             }
             break;
         case BIN:
@@ -286,7 +228,6 @@ void convert(enum format_t mode, unsigned long value) {
             break;
         case HEX:
             mask = 0xf;
-        http://ib3.bislr.net/unsubscribe/v2?s=vasafitness&m=tr_c4d333a1-9ee1-4b6c-ac99-a589d4725402
             putc('0', stdout);
             putc('x', stdout);
             for (int j = 15; j > -1; --j) {
@@ -295,7 +236,6 @@ void convert(enum format_t mode, unsigned long value) {
                     putc(dig + '0', stdout);
                 } else {
                     putc('a' - 10 + dig, stdout);
-
                 }
             }
             break;
@@ -303,6 +243,7 @@ void convert(enum format_t mode, unsigned long value) {
             return;
     }
 }
+
 
 /*********************************************************************
  *
@@ -332,57 +273,82 @@ void convert(enum format_t mode, unsigned long value) {
  *********************************************************************/
 
 void draw_me(void) {
-    FILE *f = fopen("file.txt", "w");
-    write(f->_fileno, "hello world\n", 12);
+    const char *buf = "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNdhddNNdhyyyyhdNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNdso/::::::++/::::/+ooydNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNdhy+///:::/:::::::::::::----/odMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMNdyo+/+/::::--/o--.--.-:::--/:-//::+mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMMmsso/:::::::+:.-:/....---::::::::::::/hMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMNss+//:::::-.-/-..-.---::::::::::::::::/NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMmso+/::::::----:::-::::::::::::::/+//::/NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMNs/:::::::::::::::::::::::::::::::::::smMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMNso/::::::::::::::::::://:::::::::/+osyMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMMhoossooo+++++++++++osyhhhhssoooosyy+/:oMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMMMMMMNs/:::+dhyyyyyyyyyyyyhddhhhhhhhhyyhy/::/NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMMNMMMMNyo/:/yyyyyyyyyhhhhhhdhdyhhhhyyyhhyydy::mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMMdyyNMMmyyy+hhyyyyyhhhhhhhhhhhhhhhhhhhhhhhhyd/:sMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMMMMMMmyyhMMdyyyoyyyyyhhhhhhdhhhdmhyhdddhhhhhdddhhhy::NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMMNmNMNyyyNNhyyh+/hyhhyhhdhhhhdddddyyyhdddddddhhhyhhh:/NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMNyydNyyymNhyyhs:yyyymyyhdddddddyhhyyyhhyhhhhhhhyyyys:/mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMdyydhyydNyyyhmo:oyyyyyyhhhhhhhyyhyyyyyyyyyyyyyyyyyyh/:yMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMyyydyyyNhyyyNmhsohyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyhhydo/mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMNyyymyyymyyyymyyyyyyhhyhhhhyyyyyyyyyyyyyyyyyyyyhddddh+mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMNyyydyyyhyyyhhyhdmhhhdmdddddhhddddddddddddddddmdddhhhdMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMhyyhyyyyyyyyyhydNhmdydddhhhhhhhhhhhddddddhhhhyyyyydmMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMmhyyyyyyyyyyyyhMMMNhyyhhyyyyyyyyyyhhhhhyyyyyyyyyyhNMMMMMMMMMMMMMNNMMMMMMMMMMMMMMMMMMMMM\n"
+            "MMMMMMMMMMMMMNhyyyyyyhhyyyymMMMNdhyydyyyyyyyyyyyyyyyyyyyyyyyyhdMMMMMMMMMMMMMNhyhmNMMMMMMMMMMMmhdMMMM\n"
+            "MMMMMMMMMMMMMNyyyyyyhhyhhyyhdMMhyhyhdyyyyyyyyyyyyyyyyyyyyyyhhhNMMMMMMMMMMMMMMNmhyyhdNMMMMMMMmyymMMMM\n"
+            "MMMMMMMMMMMMMdyyyyyyyyhyyyyyyhdyyyhdhhhhyyyyyyyyyyyyyhyyyyhhhdNNNNNNNNNNNmdhhhhhhdyyyhdNMMMMhyyNMMMM\n"
+            "MMMMMMMMMMMMMhyyyyyyyhhyyyyyyyydyhyyhhhhhhhyyyyyhyyyhyyyydhhhdoNNNNNNNNhhyyhdhyyyhhhhyyyhMMmyyhMMMMM\n"
+            "MMMMMMMMMMMMMhyyyyyyydyyyyyyyyyhdN--+hhhhhhhyyyyyyyyyyyyhhhhh/.mNmmNNNNNNmNNNNmmmhyydhyyyhMhyyhMMMMM\n"
+            "MMMMMMMMMMMMMdyyyyyyyhhyyyyyyyhmNN-..-+yhhhhhhhhhhhhhhhhhhhs:..hNNmmNNNNNNNNmmNNNmhyydyyyymyyydMMMMM\n"
+            "MMMMMMNNNNNdmdyyyyyyyyyyyyyyyhmNNN:....-/shhhhhhhhhhhhhhhs/....yNNNmmNNmdhhyyyyhdmmyyyhyyyhyyydMMMMM\n"
+            "MMNNNNNNNNs-hhhyyyyyyyyyyyhdmNNNNNs.......-/oyhhhhhhhhy+:......yNNNNmmhyyhhhddhyyyyyyyyyyyyyyyyNNNMM\n"
+            "NNNNNNNNNy../hhhhyyyyyyydmNNNNNNNNd...........:oddddd+-........hNNNmmdhdmNNNNNmddyyyyyyyyyyyyyyNNNNN\n"
+            "NNNNNNNNNm/..:hyyyyyyyydNNNNNNNNNNN/.........:yddhhhhdy:.......mNNdhdhsymNNNNNNNmyyyyyyyyyyyyyymNNNN\n"
+            "NNNNNNNNNNNy-.-oyyyyyyhydNNNNNNNNNNd.......:ydhhhhhhhhhds-....-NNNmhddddNNNNNNNNNhhhyyyyyyyyyyydNNNN\n"
+            "NNNNNNNNNNNNm/..:syyyhh/hNNNNNNNNNNNo...../ohdhhhhhdddhys+/...+NNNNdddhdNNNNNNNmyyyyyhyyyyyyyyyyNNNN\n"
+            "NNNNNNNNNNNNNN+...:++:./NNNNNNNNNNNNm-..:/-.-+hddddyyoo:+:oo//hNNNNmdyyyydhdmmhyyyyyhdyyyyyyyyyymNNN\n"
+            "NNNNNNNNNNNNNNNs.....::ymNNNNNNNNNNNNy-/:.....-yddso:+o-+:////NNNNNNNmhyhyyyyhyyyyyyhhdyyyyyyyyyhNNN\n";
 
-//    char *buf = "hello world\n";
-//
-//    long fd = syscall(SYS_open, "file.txt", O_CREAT);
-//
-//    if (fd == -1) {
-//        printf("Open failed with errno = %d\n", errno);
-//        // TODO: cleanup
-//        // close fd?
-//    }
-//
-//
-//    long chm = syscall(SYS_chmod, "file.txt", 0777);
-//
-//    if (chm == -1) {
-//        printf("Chmod failed with errno = %d\n", errno);
-//    }
-//
-//    long wr = syscall(SYS_write, fd, buf, 12);
-//
-//    if (wr == -1) {
-//        printf("Write failed with errno = %d\n", errno);
-//    }
+    long fd = syscall(SYS_open, "me.txt", O_CREAT|O_WRONLY);
 
+    if (fd == -1) {
+        long cl = syscall(SYS_close, fd);
+        if (cl == -1) {
+			return;
+        }
+        return;
+    }
 
+    long chm = syscall(SYS_chmod, "me.txt", 0777);
+
+    if (chm == -1) {
+        long cl = syscall(SYS_close, fd);
+        if (cl == -1) {
+			return;
+        }
+        long ul = syscall(SYS_unlink, "me.txt");
+        if (ul == -1) {
+			return;
+        }
+        return;
+    }
+
+    long wr = syscall(SYS_write, fd, buf, 3939);
+
+    if (wr == -1) {
+        long cl = syscall(SYS_close, fd);
+        if (cl == -1) {
+			return;
+        }
+        long ul = syscall(SYS_unlink, "me.txt");
+        if (ul == -1) {
+			return;
+        }
+        return;
+    }
 }
-
-int main() {
-    draw_me();
-    return 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

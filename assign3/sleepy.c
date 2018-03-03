@@ -95,6 +95,9 @@ sleepy_read(struct file *filp, char __user *buf, size_t count,
 	
   /* YOUR CODE HERE */
 
+  // Reading count bytes into *buf
+  // is count <= sizeof(buf)?
+
   /* END YOUR CODE */
 	
   mutex_unlock(&dev->sleepy_mutex);
@@ -112,6 +115,8 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
     return -EINTR;
 	
   /* YOUR CODE HERE */
+
+  // Write count bytes into/from buf? and into file starting at pos?
 
   /* END YOUR CODE */
 	

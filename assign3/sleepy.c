@@ -108,15 +108,33 @@ ssize_t
 sleepy_write(struct file *filp, const char __user *buf, size_t count, 
 	     loff_t *f_pos)
 {
+  // This device strictly reads 4 bytes.
+  if (count != 4) {
+    return -EINVAL;
+
+  }
+
   struct sleepy_dev *dev = (struct sleepy_dev *)filp->private_data;
   ssize_t retval = 0;
+
+  void *to = kzalloc(count, GFP_KERNEL);
 	
   if (mutex_lock_killable(&dev->sleepy_mutex))
     return -EINTR;
 	
   /* YOUR CODE HERE */
 
-  // Write count bytes into/from buf? and into file starting at pos?
+  //TODO: Use copy_from_user to read buf from user space.
+  if (!copy_from_user(to, buf, count)) {
+    // TODO what error throws here?
+    return -EINVAL;
+  }
+  
+
+  // Write count bytes from buf? and into file starting at pos?
+  // printk the user buf
+  printk(KERN_INFO "User wrote: %d\n", *buf);
+  
 
   /* END YOUR CODE */
 	

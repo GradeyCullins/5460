@@ -46,6 +46,8 @@ module_param(sleepy_ndevices, int, S_IRUGO);
 static unsigned int sleepy_major = 0;
 static struct sleepy_dev *sleepy_devices = NULL;
 static struct class *sleepy_class = NULL;
+static int flag = 0;
+static DECLARE_WAIT_QUEUE_HEAD(wq);
 /* ================================================================ */
 
 int 
@@ -134,6 +136,9 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
   // Write count bytes from buf? and into file starting at pos?
   // printk the user buf
   printk(KERN_INFO "User wrote: %d\n", *buf);
+
+//  wait_event_interruptible(wq, flag != 0);
+//  flag = 0;
   
 
   /* END YOUR CODE */

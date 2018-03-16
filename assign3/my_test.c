@@ -23,11 +23,11 @@ int main(void) {
   sleep_len = 10;
   r = write(fd, &sleep_len, sizeof sleep_len);
   assert(r >= 0);
+
+  r = read(fd, NULL, 0);
+  assert(r >= 0);
   close(fd);
-
   
-
-
   /* read from device 9*/
 //  fd = open("/dev/sleepy9", O_RDWR);
 //  assert(fd != -1);

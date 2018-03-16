@@ -20,9 +20,10 @@ int main(void) {
   fd = open("/dev/sleepy0", O_RDWR);
   assert(fd != -1);
 
-  sleep_len = 10;
+  sleep_len = 30;
   r = write(fd, &sleep_len, sizeof sleep_len);
   assert(r >= 0);
+  printf("write returned value: %zu\n", r);
 
   r = read(fd, NULL, 0);
   assert(r >= 0);

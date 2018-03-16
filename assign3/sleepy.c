@@ -28,6 +28,9 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 
+#include <linux/fcntl.h>
+#include <linux/sched.h>
+
 #include <asm/uaccess.h>
 
 #include "sleepy.h"
@@ -46,8 +49,8 @@ module_param(sleepy_ndevices, int, S_IRUGO);
 static unsigned int sleepy_major = 0;
 static struct sleepy_dev *sleepy_devices = NULL;
 static struct class *sleepy_class = NULL;
-static int flag = 0;
 static DECLARE_WAIT_QUEUE_HEAD(wq);
+static int flag = 0;
 /* ================================================================ */
 
 int 
@@ -97,8 +100,11 @@ sleepy_read(struct file *filp, char __user *buf, size_t count,
 	
   /* YOUR CODE HERE */
 
-  // Reading count bytes into *buf
-  // is count <= sizeof(buf)?
+  // Read up to count bytes from filp into buf.
+  printk(KERN_INFO "Waking up the sleepy heads!");
+
+  flag = 1;
+  wake_up_interruptible(&wq);
 
   /* END YOUR CODE */
 	
@@ -127,19 +133,18 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
   /* YOUR CODE HERE */
 
   //TODO: Use copy_from_user to read buf from user space.
-  if (!copy_from_user(to, buf, count)) {
+  if (copy_from_user(to, buf, count)) {
     // TODO what error throws here?
     return -EINVAL;
   }
   
+  printk(KERN_INFO "Going to sleep for %d seconds!", *((int *)to));
 
-  // Write count bytes from buf? and into file starting at pos?
-  // printk the user buf
-  printk(KERN_INFO "User wrote: %d\n", *buf);
+  int sleep_secs = *((int *)to);
 
-//  wait_event_interruptible(wq, flag != 0);
-//  flag = 0;
-  
+  retval = wait_event_interruptible_timeout(wq, flag != 0, 100 * sleep_secs);
+  retval >>= 2;
+  flag = 0;
 
   /* END YOUR CODE */
 	

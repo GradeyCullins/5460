@@ -30,6 +30,7 @@
 
 #include <linux/fcntl.h>
 #include <linux/sched.h>
+#include <linux/param.h>
 
 #include <asm/uaccess.h>
 
@@ -101,10 +102,14 @@ sleepy_read(struct file *filp, char __user *buf, size_t count,
   /* YOUR CODE HERE */
 
   // Read up to count bytes from filp into buf.
-  printk(KERN_INFO "Waking up the sleepy heads!");
+  //printk(KERN_INFO "Waking up the sleepy heads!\n");
 
   flag = 1;
   wake_up_interruptible(&wq);
+
+  int minor;
+  minor = (int)iminor(filp->f_path.dentry->d_inode);
+  printk("SLEEPY_WRITE DEVICE (%d): Process is waking everyone up.\n", minor);
 
   /* END YOUR CODE */
 	
@@ -138,12 +143,17 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
     return -EINVAL;
   }
   
-  printk(KERN_INFO "Going to sleep for %d seconds!", *((int *)to));
+//  printk(KERN_INFO "Going to sleep for %d seconds!\n", *((int *)to));
 
   int sleep_secs = *((int *)to);
 
-  retval = wait_event_interruptible_timeout(wq, flag != 0, 100 * sleep_secs);
-  retval >>= 2;
+  retval = wait_event_interruptible_timeout(wq, flag != 0, HZ * sleep_secs);
+  retval /= HZ;
+  
+  int minor;
+  minor = (int)iminor(filp->f_path.dentry->d_inode);
+  printk("SLEEPY_WRITE DEVICE (%d): remaining = %zd \n", minor, retval);
+
   flag = 0;
 
   /* END YOUR CODE */

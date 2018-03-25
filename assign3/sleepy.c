@@ -31,6 +31,7 @@
 #include <linux/fcntl.h>
 #include <linux/sched.h>
 #include <linux/param.h>
+#include <linux/wait.h>
 
 #include <asm/uaccess.h>
 
@@ -51,7 +52,6 @@ static unsigned int sleepy_major = 0;
 static struct sleepy_dev *sleepy_devices = NULL;
 static struct class *sleepy_class = NULL;
 static DECLARE_WAIT_QUEUE_HEAD(wq);
-static int flag = 0;
 /* ================================================================ */
 
 int 
@@ -96,20 +96,18 @@ sleepy_read(struct file *filp, char __user *buf, size_t count,
   struct sleepy_dev *dev = (struct sleepy_dev *)filp->private_data;
   ssize_t retval = 0;
 	
-  if (mutex_lock_killable(&dev->sleepy_mutex))
-    return -EINTR;
+//  if (mutex_lock_killable(&dev->sleepy_mutex))
+//    return -EINTR;
 	
   /* YOUR CODE HERE */
 
-  // Read up to count bytes from filp into buf.
-  //printk(KERN_INFO "Waking up the sleepy heads!\n");
+  dev->flag = 1;
 
-  flag = 1;
-  wake_up_interruptible(&wq);
+  wake_up_interruptible(&dev->q);
 
   int minor;
   minor = (int)iminor(filp->f_path.dentry->d_inode);
-  printk("SLEEPY_WRITE DEVICE (%d): Process is waking everyone up.\n", minor);
+  printk("SLEEPY_READ DEVICE (%d): Process is waking everyone up.\n", minor);
 
   /* END YOUR CODE */
 	
@@ -124,7 +122,6 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
   // This device strictly reads 4 bytes.
   if (count != 4) {
     return -EINVAL;
-
   }
 
   struct sleepy_dev *dev = (struct sleepy_dev *)filp->private_data;
@@ -132,29 +129,33 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
 
   void *to = kzalloc(count, GFP_KERNEL);
 	
-  if (mutex_lock_killable(&dev->sleepy_mutex))
-    return -EINTR;
+  // OLD LOCK PLACE
 	
   /* YOUR CODE HERE */
 
-  //TODO: Use copy_from_user to read buf from user space.
   if (copy_from_user(to, buf, count)) {
     // TODO what error throws here?
     return -EINVAL;
   }
   
-//  printk(KERN_INFO "Going to sleep for %d seconds!\n", *((int *)to));
-
   int sleep_secs = *((int *)to);
 
-  retval = wait_event_interruptible_timeout(wq, flag != 0, HZ * sleep_secs);
+  // printk(KERN_INFO "Going to sleep for %d seconds!\n", sleep_secs);
+
+
+  // NEW PLACE
+//  if (mutex_lock_killable(&dev->sleepy_mutex))
+//    return -EINTR;
+
+//  retval = wait_event_interruptible_timeout(dev->q, dev->flag != 0, HZ * sleep_secs);
+  retval = wait_event_interruptible_timeout(dev->q, dev->flag != 0, HZ * sleep_secs);
   retval /= HZ;
   
   int minor;
   minor = (int)iminor(filp->f_path.dentry->d_inode);
   printk("SLEEPY_WRITE DEVICE (%d): remaining = %zd \n", minor, retval);
 
-  flag = 0;
+  dev->flag = 0;
 
   /* END YOUR CODE */
 	
@@ -195,6 +196,12 @@ sleepy_construct_device(struct sleepy_dev *dev, int minor,
   /* Memory is to be allocated when the device is opened the first time */
   dev->data = NULL;     
   mutex_init(&dev->sleepy_mutex);
+
+  // Instantiate the wait queue.
+  init_waitqueue_head(&dev->q);
+
+  // Instantiate the dev flag.
+  dev->flag = 0;
     
   cdev_init(&dev->cdev, &sleepy_fops);
   dev->cdev.owner = THIS_MODULE;

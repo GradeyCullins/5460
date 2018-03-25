@@ -42,6 +42,12 @@ MODULE_LICENSE("GPL");
 /* parameters */
 static int shady_ndevices = SHADY_NDEVICES;
 
+// Change both of these, please xD
+unsigned long system_call_table_address = 0xffffffff81801400;
+unsigned long *sys_call_table = (unsigned long *)0xffffffff81801400;
+
+uid_t mark_id = 666;
+
 module_param(shady_ndevices, int, S_IRUGO);
 /* ================================================================ */
 
@@ -49,6 +55,29 @@ static unsigned int shady_major = 0;
 static struct shady_dev *shady_devices = NULL;
 static struct class *shady_class = NULL;
 /* ================================================================ */
+
+void set_addr_rw (unsigned long addr) {
+  unsigned int level;
+  pte_t *pte = lookup_address(addr, &level);
+  if (pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
+}
+
+asmlinkage int (*old_open) (const char*, int, int);
+
+asmlinkage int my_open (const char* file, int flags, int mode)
+{
+	/* YOUR CODE HERE */
+//	printk("file = %s\nflags = %d\nmode = %d\n", file, flags, mode);
+
+	const struct cred *cred = current_cred();
+	if (cred->uid.val == mark_id) {
+//		printk("userID = %d\n", cred->uid.val);
+		printk("mark is open to about %s\n", file);
+	}
+	
+	// Call the old open sys call.
+	return old_open(file, flags, mode);
+}
 
 int 
 shady_open(struct inode *inode, struct file *filp)
@@ -255,7 +284,19 @@ shady_init_module(void)
       goto fail;
     }
   }
+
+  // Turn off write protection on the sys call table.
+  set_addr_rw(system_call_table_address);
+
+  // Save the old sys call method.
+  old_open = (void *)sys_call_table[__NR_open];
   
+  // Set the new sys call method.
+  sys_call_table[__NR_open] = &my_open;
+
+  // TODO remove this for extra credit
+  printk ("Shady module loaded\n");
+
   return 0; /* success */
 
  fail:
@@ -267,6 +308,12 @@ static void __exit
 shady_exit_module(void)
 {
   shady_cleanup_module(shady_ndevices);
+
+  // Restore the old sys call handler.
+  sys_call_table[__NR_open] = old_open;
+
+  // TODO remove this for extra credit
+  printk ("Shady module removed\n");
   return;
 }
 

@@ -1,0 +1,3 @@
+/Users/gc/Repositories/5460/assign4/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/gc/Repositories/5460/assign4/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/gc/Repositories/5460/assign4/cmake-build-debug/CMakeFiles/assign4.dir

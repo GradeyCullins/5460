@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <signal.h>
+#include <sched.h>
 #include <unistd.h>
 
 #define MAX_THREADS 10000
@@ -30,13 +31,15 @@ void lock(int i, int num_threads) {
 	choosing[i] = 0;
 	int k = 0;
 	for (; k < num_threads; k++) {
-		while (choosing[k])
-			;
+		while (choosing[k]) {
+			sched_yield();
+		}
 
 		while (tickets[k] != 0 
 		   && (tickets[k] < tickets[i] 
-		   || (tickets[k] == tickets[i] && k < i))) 
-			;
+		   || (tickets[k] == tickets[i] && k < i))) {
+			sched_yield();
+		}
 	}
 }
 
@@ -79,14 +82,10 @@ int main(int argc, char *argv[]) {
 	pthread_t threads[num_threads]; 
 	t_inf t_infs[num_threads];
 	int i = 0;
-
 	for (; i < num_threads; ++i) {
 		choosing[i] = tickets[i] = totals[i] = 0;
 	}
-
 	i = 0;
-
-	// Dispatch the threads.
 	for (; i < num_threads; i++) {
 		t_infs[i].i = i;
 		t_infs[i].num_thr = num_threads;
@@ -94,10 +93,10 @@ int main(int argc, char *argv[]) {
 		assert(rc == 0);
 	}
 
-	// zzzzzzzzz
+	// zzzzzzz
 	sleep(sec);
 
-	// Terminate the running threads.
+	// Signal to threads that the game is over.
 	running = 0;
 
 	// Print out results.

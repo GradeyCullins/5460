@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sched.h>
 
 #define MAX_THREADS 10000
 
@@ -13,25 +14,67 @@ volatile int in_cs = 0;
 volatile int running = 1;
 volatile int choosing[MAX_THREADS];
 volatile int tickets[MAX_THREADS];
+struct spin_lock_t s;
 
 typedef struct __t_inf {
 	int i;
 	int num_thr;
 } t_inf;
 
+struct spin_lock_t {
+	int ticket;
+	int turn;
+};
+
+static inline int atomic_xadd (volatile int *ptr)
+{
+  register int val __asm__("eax") = 1;
+  asm volatile ("lock xaddl %0,%1"
+		    : "+r" (val)
+			  : "m" (*ptr)
+			    : "memory"
+				  );  
+  return val;
+}
+
+void init_lock(struct spin_lock_t *t) {
+	t->ticket = 0;
+	t->turn = 0;
+}
+
+void spin_lock (struct spin_lock_t *s) {
+	int turn = atomic_xadd(&s->ticket);
+	while (s->turn != turn) {
+		sched_yield();
+	}
+}
+
+void spin_unlock (struct spin_lock_t *s) {
+	atomic_xadd(&s->turn);
+}
+
+void mfence (void) {
+  asm volatile ("mfence" : : : "memory");
+}
+
 void lock(int i, int num_threads) {
 	choosing[i] = 1;
+	mfence();
 	int j = 1;
 	int max = tickets[0];
 	for (; j < num_threads; j++) {
 		max = (tickets[j] > max) ? tickets[j] : max;
 	}
 	tickets[i] = 1 + max;
+	mfence();
 	choosing[i] = 0;
+	mfence();
 	int k = 0;
 	for (; k < num_threads; k++) {
 		while (choosing[k])
 			;
+
+		mfence();
 
 		while (tickets[k] != 0 
 		   && (tickets[k] < tickets[i] 
@@ -41,13 +84,15 @@ void lock(int i, int num_threads) {
 }
 
 void unlock(int i) {
+	mfence();
 	tickets[i] = 0;
 }
 
 void* thread_work(void *arg) {
 	t_inf t = *((t_inf *)(arg));
 	while (running) {
-		lock(t.i, t.num_thr);
+//		lock(t.i, t.num_thr);
+		spin_lock(&s);
 		
 		// Critical section.
 		assert (in_cs==0);
@@ -63,7 +108,8 @@ void* thread_work(void *arg) {
 		++totals[t.i];
 		++total;
 
-		unlock(t.i);
+		spin_unlock(&s);
+//		unlock(t.i);
 	}
 	return arg;
 }
@@ -79,6 +125,7 @@ int main(int argc, char *argv[]) {
 	pthread_t threads[num_threads]; 
 	t_inf t_infs[num_threads];
 	int i = 0;
+	init_lock(&s);
 
 	for (; i < num_threads; ++i) {
 		choosing[i] = tickets[i] = totals[i] = 0;

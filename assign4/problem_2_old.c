@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <signal.h>
-#include <unistd.h>
+#include <sched.h>
 
 #define MAX_THREADS 10000
 
@@ -30,13 +30,15 @@ void lock(int i, int num_threads) {
 	choosing[i] = 0;
 	int k = 0;
 	for (; k < num_threads; k++) {
-		while (choosing[k])
-			;
+		while (choosing[k]) {
+			sched_yield();
+		}
 
 		while (tickets[k] != 0 
 		   && (tickets[k] < tickets[i] 
-		   || (tickets[k] == tickets[i] && k < i))) 
-			;
+		   || (tickets[k] == tickets[i] && k < i))) {
+			sched_yield();
+		}
 	}
 }
 
@@ -74,31 +76,35 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	(void)argc; // Used to ignore unused error
+	clock_t start = clock();
 	int num_threads = atoi(argv[1]);
 	int sec = atoi(argv[2]);
 	pthread_t threads[num_threads]; 
+	int created_threads	= 0;
 	t_inf t_infs[num_threads];
 	int i = 0;
-
 	for (; i < num_threads; ++i) {
 		choosing[i] = tickets[i] = totals[i] = 0;
 	}
-
 	i = 0;
-
-	// Dispatch the threads.
-	for (; i < num_threads; i++) {
-		t_infs[i].i = i;
-		t_infs[i].num_thr = num_threads;
-		int rc = pthread_create(&threads[i], NULL, thread_work, &t_infs[i]);
-		assert(rc == 0);
+	while (running) {
+		clock_t next = clock();
+		// Only create the threads once.
+		if (!created_threads) {
+			// Dispatch the threads.
+			for (; i < num_threads; i++) {
+				t_infs[i].i = i;
+				t_infs[i].num_thr = num_threads;
+				int rc = pthread_create(&threads[i], NULL, thread_work, &t_infs[i]);
+				assert(rc == 0);
+			}
+			created_threads = 1;
+		}
+		if (difftime(next, start) / CLOCKS_PER_SEC >= sec) {
+			// Signal to the threads that the game is over.
+			running = 0;
+		}
 	}
-
-	// zzzzzzzzz
-	sleep(sec);
-
-	// Terminate the running threads.
-	running = 0;
 
 	// Print out results.
 	i = 0;

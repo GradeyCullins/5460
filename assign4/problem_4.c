@@ -13,25 +13,62 @@ volatile int in_cs = 0;
 volatile int running = 1;
 volatile int choosing[MAX_THREADS];
 volatile int tickets[MAX_THREADS];
+struct spin_lock_t s;
 
 typedef struct __t_inf {
 	int i;
 	int num_thr;
 } t_inf;
 
+struct spin_lock_t {
+	int flag;
+};
+
+static inline int atomic_cmpxchg (volatile int *ptr, int old, int new)
+{
+  int ret;
+  asm volatile ("lock cmpxchgl %2,%1"
+		      : "=a" (ret), "+m" (*ptr)     
+			      : "r" (new), "0" (old)      
+				      : "memory");         
+  return ret;                            
+}
+
+void init_lock(struct spin_lock_t *t) {
+	t->flag = 0;
+}
+
+void spin_lock (struct spin_lock_t *s) {
+	while (atomic_cmpxchg(&s->flag, 0, 1) == 1)
+		;
+}
+
+void spin_unlock (struct spin_lock_t *s) {
+	s->flag = 0;
+}
+
+void mfence (void) {
+  asm volatile ("mfence" : : : "memory");
+}
+
 void lock(int i, int num_threads) {
 	choosing[i] = 1;
+	mfence();
 	int j = 1;
 	int max = tickets[0];
 	for (; j < num_threads; j++) {
 		max = (tickets[j] > max) ? tickets[j] : max;
 	}
 	tickets[i] = 1 + max;
+	mfence();
 	choosing[i] = 0;
+	mfence();
 	int k = 0;
 	for (; k < num_threads; k++) {
 		while (choosing[k])
 			;
+
+		mfence();
 
 		while (tickets[k] != 0 
 		   && (tickets[k] < tickets[i] 
@@ -41,13 +78,15 @@ void lock(int i, int num_threads) {
 }
 
 void unlock(int i) {
+	mfence();
 	tickets[i] = 0;
 }
 
 void* thread_work(void *arg) {
 	t_inf t = *((t_inf *)(arg));
 	while (running) {
-		lock(t.i, t.num_thr);
+//		lock(t.i, t.num_thr);
+		spin_lock(&s);
 		
 		// Critical section.
 		assert (in_cs==0);
@@ -63,7 +102,8 @@ void* thread_work(void *arg) {
 		++totals[t.i];
 		++total;
 
-		unlock(t.i);
+		spin_unlock(&s);
+//		unlock(t.i);
 	}
 	return arg;
 }
@@ -79,6 +119,7 @@ int main(int argc, char *argv[]) {
 	pthread_t threads[num_threads]; 
 	t_inf t_infs[num_threads];
 	int i = 0;
+	init_lock(&s);
 
 	for (; i < num_threads; ++i) {
 		choosing[i] = tickets[i] = totals[i] = 0;

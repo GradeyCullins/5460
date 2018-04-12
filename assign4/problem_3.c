@@ -19,19 +19,28 @@ typedef struct __t_inf {
 	int num_thr;
 } t_inf;
 
+void mfence (void) {
+  asm volatile ("mfence" : : : "memory");
+}
+
 void lock(int i, int num_threads) {
 	choosing[i] = 1;
+	mfence();
 	int j = 1;
 	int max = tickets[0];
 	for (; j < num_threads; j++) {
 		max = (tickets[j] > max) ? tickets[j] : max;
 	}
 	tickets[i] = 1 + max;
+	mfence();
 	choosing[i] = 0;
+	mfence();
 	int k = 0;
 	for (; k < num_threads; k++) {
 		while (choosing[k])
 			;
+
+		mfence();
 
 		while (tickets[k] != 0 
 		   && (tickets[k] < tickets[i] 
@@ -41,6 +50,7 @@ void lock(int i, int num_threads) {
 }
 
 void unlock(int i) {
+	mfence();
 	tickets[i] = 0;
 }
 
